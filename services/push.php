@@ -1,10 +1,10 @@
 <?php
 
-namespace application\services\messaging;
+namespace Messaging\Services;
 
-use \engine\Service;
-use \engine\Helpers;
-use \engine\Utils;
+use SplitPHP\Service;
+use SplitPHP\Helpers;
+use SplitPHP\Utils;
 use Exception;
 
 use Google\Auth\Credentials\ServiceAccountCredentials;

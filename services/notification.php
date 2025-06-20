@@ -1,8 +1,8 @@
 <?php
 
-namespace application\services\messaging;
+namespace Messaging\Services;
 
-use \engine\Service;
+use SplitPHP\Service;
 
 class Notification extends Service
 {

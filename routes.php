@@ -1,8 +1,8 @@
 <?php
 
-namespace application\routes\api;
+namespace Messaging\Routes;
 
-use \engine\WebService;
+use SplitPHP\WebService;
 
 class Messaging extends WebService
 {
