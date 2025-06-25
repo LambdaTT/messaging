@@ -9,7 +9,7 @@ class CreatePushRelatedTables extends Migration
 {
   public function apply()
   {
-    $this->Table('MSG_PUSH_SUBSCRIPTION')
+    $this->Table('MSG_PUSH_SUBSCRIPTION', 'Push Subscription')
       ->id('id_msg_push_subscription') // int primary key auto increment
       ->string('ds_key', 17)
       ->datetime('dt_created')->setDefaultValue(DbVocab::SQL_CURTIMESTAMP())
@@ -24,7 +24,7 @@ class CreatePushRelatedTables extends Migration
       ->Foreign('id_iam_user_created')->references('id_iam_user')->atTable('IAM_USER')->onUpdate(DbVocab::FKACTION_CASCADE)->onDelete(DbVocab::FKACTION_SETNULL)
       ->Foreign('id_iam_user_updated')->references('id_iam_user')->atTable('IAM_USER')->onUpdate(DbVocab::FKACTION_CASCADE)->onDelete(DbVocab::FKACTION_SETNULL);
 
-    $this->Table('MSG_PUSH_QUEUE')
+    $this->Table('MSG_PUSH_QUEUE', 'Push Queue')
       ->id('id_msg_push_queue') // int primary key auto increment
       ->datetime('dt_created')->setDefaultValue(DbVocab::SQL_CURTIMESTAMP())
       ->text('tx_token')

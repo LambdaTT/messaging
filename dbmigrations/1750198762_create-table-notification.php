@@ -9,7 +9,7 @@ class CreateTableNotification extends Migration
 {
   public function apply()
   {
-    $this->Table('MSG_NOTIFICATION')
+    $this->Table('MSG_NOTIFICATION', 'Notification')
       ->id('id_msg_notification') // int primary key auto increment
       ->string('ds_key', 17)
       ->datetime('dt_created')->setDefaultValue(DbVocab::SQL_CURTIMESTAMP())
