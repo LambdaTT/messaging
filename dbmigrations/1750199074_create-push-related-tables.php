@@ -2,7 +2,7 @@
 
 namespace Messaging\Migrations;
 
-use SplitPHP\DbMigrations\Migration;
+use SplitPHP\DbManager\Migration;
 use SplitPHP\Database\DbVocab;
 
 class CreatePushRelatedTables extends Migration

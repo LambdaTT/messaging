@@ -123,7 +123,7 @@ class Push extends Service
       ->post(self::FIREBASE_PUSH_URL);
 
     if ($response->status != 200) {
-      Helpers::Log()->add('push_notification_error', [
+      Helpers::Log()->common('push_notification_error', [
         'date' => date('Y-m-d H:i:s'),
         ...(array)$response
       ]);
