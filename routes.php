@@ -9,7 +9,7 @@ class Messaging extends WebService
   /////////////////
   // NOTIFICATION ENDPOINTS:
   /////////////////
-  public function init()
+  public function init(): void
   {
     $this->addEndpoint('GET', '/v1/notification/headlines', function ($params) {
       // Auth user login:
