@@ -5,16 +5,19 @@ namespace Messaging\Services;
 use SplitPHP\Service;
 use SplitPHP\Helpers;
 use SplitPHP\Utils;
-use Exception;
+use SplitPHP\Exceptions\FailedValidation;
 
 use Google\Auth\Credentials\ServiceAccountCredentials;
 use Google\Auth\HttpHandler\HttpHandlerFactory;
 
 class Push extends Service
 {
-  const TABLE = "MSG_PUSH";
-  const FIREBASE_PROJECT_ID = "sindiapp-notification";
-  const FIREBASE_PUSH_URL = "https://fcm.googleapis.com/v1/projects/" . self::FIREBASE_PROJECT_ID . "/messages:send";
+  const TABLE = "MSG_PUSH_SUBSCRIPTION";
+
+  public function __construct()
+  {
+    define('FIREBASE_PUSH_URL', getenv('FIREBASE_PUSH_URL'));
+  }
 
   public function createSubcription($data)
   {
@@ -36,7 +39,7 @@ class Push extends Service
     $user = $this->getService('iam/session')->getLoggedUser();
 
     if (empty($user)) {
-      throw new Exception('Usuário precisa estar logado para receber notificações', VALIDATION_FAILED);
+      throw new FailedValidation('Usuário precisa estar logado para receber notificações');
     }
 
     // Set default values
@@ -120,7 +123,7 @@ class Push extends Service
       ->setHeader('Content-Type: application/json')
       ->setHeader('Authorization: Bearer ' . $authToken['access_token'])
       ->setDataAsJson($message)
-      ->post(self::FIREBASE_PUSH_URL);
+      ->post(FIREBASE_PUSH_URL);
 
     if ($response->status != 200) {
       Helpers::Log()->common('push_notification_error', [

@@ -2,11 +2,19 @@
 
 namespace Messaging\Services;
 
+use SplitPHP\Exceptions\Unauthorized;
 use SplitPHP\Service;
 
 class Notification extends Service
 {
-  private $data;
+  public function __construct()
+  {
+    if (!$this->getService('modcontrol/control')->moduleExists('iam')) {
+      throw new Unauthorized('Module "iam" is required for messaging module to work. Install it with "composer require lambdatt-php/iam"');
+    }
+
+    define('MSG_PUSH_ENABLED', getenv('MSG_PUSH_ENABLED') === 'on');
+  }
 
   public function list($params = [])
   {
@@ -38,14 +46,21 @@ class Notification extends Service
       );
   }
 
-  public function listHeadlines($params)
+  public function listHeadlines($params = [])
   {
-
-    $query = "SELECT DISTINCT ds_headline FROM MSG_NOTIFICATION";
-
     return $this->getDao('MSG_NOTIFICATION')
       ->bindParams($params)
-      ->find($query);
+      ->fetch(
+        function (&$row) {
+          $row = (object) [
+            'ds_headline' => $row->ds_headline,
+          ];
+        },
+        "SELECT DISTINCT 
+            id_iam_user_recipient,
+            ds_headline 
+          FROM `MSG_NOTIFICATION`"
+      );
   }
 
   public function get($params = [])
@@ -97,7 +112,9 @@ class Notification extends Service
     $returnObj = $this->getDao('MSG_NOTIFICATION')->insert($data);
 
     // Add to Push Queue
-    $this->getService('messaging/push')->addToQueue($returnObj);
+    if (MSG_PUSH_ENABLED) {
+      $this->getService('messaging/push')->addToQueue($returnObj);
+    }
 
     return $returnObj;
   }

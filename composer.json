@@ -14,5 +14,7 @@
       "email": "gabriel.valguelfi@gmail.com"
     }
   ],
-  "require": {}
+  "require": {
+    "google/auth": "^1.20"
+  }
 }
