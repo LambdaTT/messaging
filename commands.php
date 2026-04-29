@@ -15,8 +15,8 @@ class Pushnotification extends Cli
       $this->getDao('MSG_PUSH_QUEUE')
         ->fetch(function ($row) use (&$ids) {
           $ids[] = $row->id_msg_push_queue;
-          $row->ds_token = Utils::dataDecrypt($row->ds_token, PUBLIC_KEY);
-          $response = $this->getService('messaging/push')->sendPushNotification($row);
+          $token = $row->ds_token;
+          $response = $this->getService('messaging/push')->send($token, $row);
           Utils::printLn($response);
         }, "SELECT * FROM `MSG_PUSH_QUEUE` LIMIT 500");
 

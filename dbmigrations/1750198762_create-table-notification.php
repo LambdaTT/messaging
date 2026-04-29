@@ -9,7 +9,8 @@ class CreateTableNotification extends Migration
 {
   public function apply()
   {
-    $this->Table('MSG_NOTIFICATION', 'Notification')
+    $this->Table('MSG_NOTIFICATION', 'Notificação de Usuário')
+      // Fields
       ->id('id_msg_notification') // int primary key auto increment
       ->string('ds_key', 17)
       ->datetime('dt_created')->setDefaultValue(DbVocab::SQL_CURTIMESTAMP())
@@ -19,10 +20,16 @@ class CreateTableNotification extends Migration
       ->string('ds_headline', 60)
       ->string('ds_brief', 128)
       ->text('tx_content')
+      ->string('ds_link', 255)->nullable()->setDefaultValue(null)
       ->fk('id_iam_user_recipient')
       ->string('do_read', 1)->setDefaultValue('N')
       ->string('do_important', 1)->setDefaultValue('N')
+      ->string('do_sendpush', 1)->setDefaultValue('N')
+
+      // Indexes
       ->Index('KEY', DbVocab::IDX_UNIQUE)->onColumn('ds_key')
+
+      // Foreign Keys
       ->Foreign('id_iam_user_recipient')->references('id_iam_user')->atTable('IAM_USER')->onUpdate(DbVocab::FKACTION_CASCADE)->onDelete(DbVocab::FKACTION_CASCADE)
       ->Foreign('id_iam_user_created')->references('id_iam_user')->atTable('IAM_USER')->onUpdate(DbVocab::FKACTION_CASCADE)->onDelete(DbVocab::FKACTION_SETNULL)
       ->Foreign('id_iam_user_updated')->references('id_iam_user')->atTable('IAM_USER')->onUpdate(DbVocab::FKACTION_CASCADE)->onDelete(DbVocab::FKACTION_SETNULL);

@@ -3,7 +3,10 @@
 namespace Messaging\Routes;
 
 use Exception;
+use SplitPHP\Exceptions\BadRequest;
+use SplitPHP\Exceptions\FailedValidation;
 use SplitPHP\Request;
+use SplitPHP\Utils;
 use SplitPHP\WebService;
 
 class Messaging extends WebService
@@ -13,8 +16,10 @@ class Messaging extends WebService
   /////////////////
   public function init(): void
   {
+    $this->setAntiXsrfValidation(false);
+
     if (!$this->getService('modcontrol/control')->moduleExists('iam'))
-      throw new Exception('Module "iam" is required for messaging module to work. Install it with "composer require lambdatt-php/iam"');
+      throw new Exception('Module "iam" is required for messaging to work. Install it with "composer require lambdatt-php/iam"');
 
     $this->addEndpoint('GET', '/v1/notification/headlines', function ($params) {
       // Auth user login:
@@ -27,18 +32,30 @@ class Messaging extends WebService
       return $this->response->withStatus(200)->withData($result);
     });
 
-    // Count
     $this->addEndpoint('GET', '/v1/notification/count-unread', function ($params) {
       // Auth user login:
       if (!$this->getService('iam/session')->authenticate(false)) return $this->response->withStatus(401);
 
-      $usr = $this->getService('iam/session')->getLoggedUser();
-      $params['id_iam_user_recipient'] = $usr->id_iam_user;
-      $params['do_read'] = 'N';
-
-      $count = count($this->getService('messaging/notification')->list($params, false));
+      $count = $this->getService('messaging/notification')->countUnread();
 
       return $this->response->withText($count);
+    });
+
+    // SSE stream — real-time notification signal for the logged-in user.
+    // The response is streamed directly by the service (headers + event loop);
+    // the framework response object is intentionally left empty/unused.
+    $this->addEndpoint('GET', '/v1/notification/watch', function ($params) {
+      // EventSource cannot set custom headers, so the session key is passed as
+      // a query param (?iam_session_key=...) and injected into the unified
+      // request context so that iam/session->authenticate() can find it.
+      if (!empty($params['iam_session_key'])) {
+        Request::setContext('iam_session_key', $params['iam_session_key']);
+      }
+
+      if (!$this->getService('iam/session')->authenticate(false)) return $this->response->withStatus(401);
+
+      $this->getService('messaging/notification')->watchCount();
+      exit; // SSE loop ended gracefully — prevent framework from calling respond(null)
     });
 
     $this->addEndpoint('GET', '/v1/notification', function ($params) {
@@ -63,12 +80,23 @@ class Messaging extends WebService
         ->withData($ntfObj);
     });
 
-    $this->addEndpoint('PUT', '/v1/notification/mark-as-read/?notificationKey?', function (Request $request) {
+    $this->addEndpoint('POST', '/v1/notification/team/?teamTag?', function (Request $request, $teamTag) {
+      // Auth user login:
+      if (!$this->getService('iam/session')->authenticate(false)) return $this->response->withStatus(401);
+
+      $data = $request->getBody();
+      $this->getService('messaging/notification')->addToTeam($teamTag, $data);
+
+      return $this->response
+        ->withStatus(201);
+    });
+
+    $this->addEndpoint('PUT', '/v1/notification/mark-as-read/?key?', function ($key) {
       // Auth user login:
       if (!$this->getService('iam/session')->authenticate()) return $this->response->withStatus(401);
 
       $params = [
-        'ds_key' => $request->getRoute()->params['notificationKey'],
+        'ds_key' => $key,
       ];
 
       $rows = $this->getService('messaging/notification')->markAsRead($params);
@@ -77,12 +105,12 @@ class Messaging extends WebService
       return $this->response->withStatus(204);
     });
 
-    $this->addEndpoint('DELETE', '/v1/notification/?notificationKey?', function (Request $request) {
+    $this->addEndpoint('DELETE', '/v1/notification/?key?', function ($key) {
       // Auth user login:
       if (!$this->getService('iam/session')->authenticate()) return $this->response->withStatus(401);
 
       $params = [
-        'ds_key' => $request->getRoute()->params['notificationKey'],
+        'ds_key' => $key,
       ];
       $deleted = $this->getService('messaging/notification')->remove($params);
 
@@ -95,21 +123,26 @@ class Messaging extends WebService
     /////////////////
     // PUSH ENDPOINTS:
     /////////////////
+    $this->addEndpoint('POST', "/v1/push/subscription", function ($data) {
+      $deviceKey = $_SERVER['HTTP_IAM_DEVICE_KEY'];
+      if (empty($deviceKey)) throw new BadRequest('No Device key could be found on the request.');
 
-    $endpoint = '/v1/push';
+      $device = $this->getService('iam/device')->get([
+        'ds_key' => Utils::dataDecrypt($deviceKey, PRIVATE_KEY)
+      ]);
+      if (empty($device)) throw new FailedValidation('No Device found for the given key.');
 
-    // Cria a Inscrição
-    $this->addEndpoint('POST', "{$endpoint}/subscription", function ($data) {
+      $data['id_iam_device'] = $device->id_iam_device;
+
+      $record = $this->getService('messaging/push')->createSubcription($data);
+
       return $this->response
-        ->withStatus(200)
-        ->withData($this->getService('messaging/push')->createSubcription($data));
+        ->withStatus(201)
+        ->withData($record);
     }, false);
 
     // Atualiza a Inscrição
-    $this->addEndpoint('PUT', "{$endpoint}/subscription/?oldToken?", function ($data) {
-      $oldToken = $data['oldToken'];
-      $newToken = $data['newToken'];
-
+    $this->addEndpoint('PUT', "/v1/push/subscription/?oldToken?/?newToken?", function ($oldToken, $newToken) {
       $this->getService('messaging/push')->refreshToken($oldToken, $newToken);
 
       return $this->response->withStatus(204);
