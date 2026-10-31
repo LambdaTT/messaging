@@ -46,7 +46,7 @@ class Push extends Service
       throw new FailedValidation('Token is required');
 
     // Formatting Subscription Data to insert in DB
-    $data['tx_token'] = Utils::dataEncrypt($data['tx_token'], PRIVATE_KEY);
+    $data['tx_token'] = Utils::dataEncrypt($data['tx_token'], APP_SECRET);
 
     // Set default values
     $data['ds_key'] = 'sub-' . uniqid();
@@ -57,16 +57,16 @@ class Push extends Service
   public function refreshToken($oldToken, $newToken)
   {
     return $this->getDao(self::TABLE_SUBSCRIPTION)
-      ->filter('tx_token')->equalsTo(Utils::dataEncrypt($oldToken, PRIVATE_KEY))
+      ->filter('tx_token')->equalsTo(Utils::dataEncrypt($oldToken, APP_SECRET))
       ->update([
         'dt_updated' => date('Y-m-d H:i:s'),
-        'tx_token' => Utils::dataEncrypt($newToken, PRIVATE_KEY)
+        'tx_token' => Utils::dataEncrypt($newToken, APP_SECRET)
       ]);
   }
 
   public function send($token, $data)
   {
-    $token = Utils::dataDecrypt($token, PRIVATE_KEY);
+    $token = Utils::dataDecrypt($token, APP_SECRET);
 
     // Handles data
     $data = (object) $data;

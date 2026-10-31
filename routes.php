@@ -128,7 +128,7 @@ class Messaging extends WebService
       if (empty($deviceKey)) throw new BadRequest('No Device key could be found on the request.');
 
       $device = $this->getService('iam/device')->get([
-        'ds_key' => Utils::dataDecrypt($deviceKey, PRIVATE_KEY)
+        'ds_key' => Utils::dataDecrypt($deviceKey, APP_SECRET)
       ]);
       if (empty($device)) throw new FailedValidation('No Device found for the given key.');
 
@@ -147,5 +147,94 @@ class Messaging extends WebService
 
       return $this->response->withStatus(204);
     }, false);
+
+    /////////////////
+    // CHAT ENDPOINTS:
+    /////////////////
+    $this->addEndpoint('GET', '/v1/chat-summary/?reader?', function ($reader, Request $request) {
+      // Auth user login:
+      if (!$this->getService('iam/session')->authenticate(false)) return $this->response->withStatus(401);
+
+      $records = $this->getService('messaging/chat')->list($reader, $request->getBody());
+      return $this->response->withStatus(200)->withData($records);
+    });
+
+    $this->addEndpoint('PUT', '/v1/chat/?key?/close', function ($key) {
+      // Auth user login:
+      if (!$this->getService('iam/session')->authenticate(false)) return $this->response->withStatus(401);
+
+      $filters = ['ds_key' => $key];
+      $rowsAffected = $this->getService('messaging/chat')->close($filters);
+
+      if ($rowsAffected < 1) return $this->response->withStatus(404);
+
+      return $this->response->withStatus(204);
+    });
+
+    $this->addEndpoint('DELETE', '/v1/chat/?key?', function ($key) {
+      // Auth user login:
+      if (!$this->getService('iam/session')->authenticate(false)) return $this->response->withStatus(401);
+
+      $filters = ['ds_key' => $key];
+      $deleted = $this->getService('messaging/chat')->remove($filters);
+
+      if (!$deleted) return $this->response->withStatus(404);
+
+      return $this->response->withStatus(204);
+    });
+
+    $this->addEndpoint('GET', '/v1/chat-message/count-unread/?reader?', function ($reader) {
+      // Auth user login:
+      if (!$this->getService('iam/session')->authenticate(false)) return $this->response->withStatus(401);
+
+      $count = $this->getService('messaging/chatmessage')->countUnread($reader);
+
+      return $this->response
+        ->withStatus(200)
+        ->withText($count);
+    });
+
+    $this->addEndpoint('GET', '/v1/chat-message/?chatKey?/?reader?', function ($chatKey, $reader) {
+      // Auth user login:
+      if (!$this->getService('iam/session')->authenticate(false)) return $this->response->withStatus(401);
+
+      $chat = $this->getService('messaging/chat')->get($reader, [
+        'ds_key' => $chatKey,
+      ]);
+      if (empty($chat)) return $this->response->withStatus(404);
+
+      $messages = $this->getService('messaging/chatmessage')->list([
+        'id_msg_chat' => $chat->id_msg_chat,
+      ], $reader);
+      return $this->response->withStatus(200)->withData($messages);
+    });
+
+    $this->addEndpoint('POST', '/v1/chat-message/?chatKey?/?participant?', function ($chatKey, $participant, Request $request) {
+      // Auth user login:
+      if (!$this->getService('iam/session')->authenticate(false)) return $this->response->withStatus(401);
+
+      $data = $request->getBody();
+      $chat = $this->getService('messaging/chat')->get($participant, ['ds_key' => $chatKey]);
+      if (empty($chat)) return $this->response->withStatus(404);
+
+      $data['id_msg_chat'] = $chat->id_msg_chat;
+      $record = $this->getService('messaging/chatmessage')->create($data);
+
+      return $this->response
+        ->withStatus(201)
+        ->withData($record);
+    });
+
+    $this->addEndpoint('DELETE', '/v1/chat-message/?key?', function ($key) {
+      // Auth user login:
+      if (!$this->getService('iam/session')->authenticate(false)) return $this->response->withStatus(401);
+
+      $filters = ['ds_key' => $key];
+      $deleted = $this->getService('messaging/chatmessage')->remove($filters);
+
+      if (!$deleted) return $this->response->withStatus(404);
+
+      return $this->response->withStatus(204);
+    });
   }
 }
