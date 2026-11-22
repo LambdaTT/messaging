@@ -1,0 +1,25 @@
+🧩 LambdaTT Messaging - Release Notes
+---
+
+📦 Version: 0.2.1
+📅 Release Date: 2026-11-22
+📄 License: MIT
+👤 Authors:
+  - Gabriel Valentoni Guelfi (https://github.com/gabriel-guelfi)
+
+---
+
+💬 Commentaries:
+
+Housekeeping pass aligning this module's plumbing with the IAM permissions-domain simplification
+(IAM v1.3.0). No change to who can access the endpoints.
+
+---
+
+🔧 Changed:
+
+    ▸ The init-time requirement check now uses `ModsManager::modExists('iam')` instead of the
+      `modcontrol/control` service. Per-user inline authentication on the notification, push and
+      chat endpoints is unchanged; this module defines no entity-level permission tags.
+
+---
