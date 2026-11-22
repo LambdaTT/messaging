@@ -8,6 +8,7 @@ use SplitPHP\Exceptions\FailedValidation;
 use SplitPHP\Request;
 use SplitPHP\Utils;
 use SplitPHP\WebService;
+use SplitPHP\ModsManager;
 
 class Messaging extends WebService
 {
@@ -18,7 +19,7 @@ class Messaging extends WebService
   {
     $this->setAntiXsrfValidation(false);
 
-    if (!$this->getService('modcontrol/control')->moduleExists('iam'))
+    if (!ModsManager::modExists('iam'))
       throw new Exception('Module "iam" is required for messaging to work. Install it with "composer require lambdatt-php/iam"');
 
     $this->addEndpoint('GET', '/v1/notification/headlines', function ($params) {
