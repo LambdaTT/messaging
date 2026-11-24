@@ -5,13 +5,14 @@ namespace Messaging\Services;
 use Exception;
 
 use SplitPHP\Helpers;
+use SplitPHP\ModsManager;
 use SplitPHP\Service;
 
 class Notification extends Service
 {
   public function __construct()
   {
-    if (!$this->getService('modcontrol/control')->moduleExists('iam'))
+    if (!ModsManager::modExists('iam'))
       throw new Exception('Module "iam" is required for notifications to work. Install it with "composer require lambdatt-php/iam"');
 
     if (!defined('MSG_PUSH_ENABLED'))
